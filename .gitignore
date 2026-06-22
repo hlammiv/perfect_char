@@ -1,0 +1,23 @@
+# build artifacts
+*.o
+dym-mod-metro
+a.out
+gmon.out
+*.gcda
+*.gcno
+
+# python
+__pycache__/
+*.pyc
+
+# editor / os
+*.swp
+*~
+.DS_Store
+
+# run output (curated example below is force-kept)
+out_*.log
+proc_*
+proct_*
+oproc_*
+!data_s1080/out_bf8.407_ba-1.65_nt32_nx32_s.log

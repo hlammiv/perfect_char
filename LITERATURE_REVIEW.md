@@ -257,7 +257,7 @@ Alternative digitizations share the finite-link-space goal but differ in route: 
 
 ### Modern parametrization (confirmed lead)
 
-51. M. Holland et al. (2025). *Machine-learned renormalization-group-improved gauge actions and classically perfect gradient flows.* Phys. Rev. Lett. (2025). arXiv:2504.15870. https://arxiv.org/abs/2504.15870 — cited as [HO]. *(Bibliographic details as supplied by the survey; treat the exact PRL volume/page as to-be-confirmed.)*
+51. K. Holland, A. Ipp, D. I. Müller, U. Wenger (2025; rev. 2026). *Machine-learned renormalization-group-improved gauge actions and classically perfect gradient flows.* Phys. Rev. D (2026), DOI 10.1103/k41k-2pnc. arXiv:2504.15870. https://arxiv.org/abs/2504.15870 — cited as [HO]. *(Confirmed. Gauge-equivariant-CNN parametrization of the SU(3) fixed-point action together with its **classically perfect gradient flow** — flow free of tree-level cutoff effects to all orders in a; gradient-flow observables show <1% discretization error up to a≈0.14 fm. Continuous SU(3); no discrete subgroups or character expansions.)*
 
 52. C. J. Garofalo, P. Bauer et al. (2024). *Digitizing lattice gauge theories in the magnetic basis: reducing the breaking of the fundamental commutation relations.* Eur. Phys. J. C (2024). arXiv:2311.11928. https://arxiv.org/abs/2311.11928 — cited as [GB]. *(Author list/venue as supplied by the survey; exact details to-be-confirmed.)*
 

@@ -237,6 +237,17 @@ int main(int argc, char *argv[])
   for (unsigned k = 0; k < NTHERM; k++) update();
   printf("thermo done\n"); fflush(stdout);
 
+  { /* reweighting log header: action is linear in beta, S=-sum_c beta_c P_c(U) */
+    char pf[600]; snprintf(pf, sizeof(pf), "%spchar.dat", outprefix);
+    FILE* ph = fopen(pf, "w");
+    if (ph) {
+      fprintf(ph, "# NCHAR %d\n# BASE_BETA", C);
+      for (unsigned c = 0; c < C; ++c) fprintf(ph, " %.10g", beta[c]);
+      fprintf(ph, "\n# cols: num  P_0..P_%d  simpleplaq repoly impoly\n", C-1);
+      fclose(ph);
+    }
+  }
+
   for (unsigned n = 0; n < N; n++)
   {
     timer tm; tm.start("update");
@@ -271,6 +282,24 @@ int main(int argc, char *argv[])
     printf("\n");
     printf("ACC: %f\n", ((double)acc)/hit);
     fflush(stdout);
+
+    { /* per-config character plaquette sums P_c = sum_plaq Re chi_c(U_p), for reweighting */
+      double Pc[CMAX]; for (unsigned c = 0; c < C; ++c) Pc[c] = 0.0;
+      for (unsigned i = 0; i < V; ++i)
+      for (unsigned d1 = 0; d1 < D; ++d1)
+      for (unsigned d2 = d1+1; d2 < D; ++d2) {
+        int cl = conclass[plaquette(i, d1, d2)];
+        for (unsigned c = 0; c < C; ++c) Pc[c] += ReChar[c][cl];
+      }
+      char pf[600]; snprintf(pf, sizeof(pf), "%spchar.dat", outprefix);
+      FILE* ph = fopen(pf, "a");
+      if (ph) {
+        fprintf(ph, "%u", n);
+        for (unsigned c = 0; c < C; ++c) fprintf(ph, " %.10e", Pc[c]);
+        fprintf(ph, " %.10e %.10e %.10e\n", simpleplaq, rep, imp);
+        fclose(ph);
+      }
+    }
 
     save_nersc(n);
     tm.stop();

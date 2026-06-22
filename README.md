@@ -214,15 +214,21 @@ multi-character MC ──► save SU(3) configs (NERSC) ──► Wilson flow �
    embedding is caught immediately.
 
 3. **Flow + extract** (`tools/wilsonflow/build.sh` builds `wilson_flow` + `w0_scale`,
-   the BMW standalone tools):
-   ```
-   tools/wilsonflow/wilson_flow -f nersc -e 0.01 -t 10.0  out/nersc-...   # -> flow.<cfg>
-   scripts/flow_w0.sh   SCANDIR [eps] [tmax] [ncores]     # flow all configs, collect
-   scripts/w0_extract.py                                  # jackknife t₀, w₀ (ref 0.3)
-   ```
-   `scripts/string_tension.py` fits √σ from the Wilson-loop grid; along a coupling
-   trajectory the dimensionless ratio √σ·w₀ should stay constant where the discrete
-   theory mimics continuum SU(3) (watch for the freezing line pre-empting the window).
+   the BMW standalone tools).
+
+The whole 1t→5t ladder is orchestrated by three scripts (see
+[`scripts/README.md`](scripts/README.md) for laptop/lenore presets):
+```
+scripts/run_ladder.sh OUTDIR "1t 2t 3t 4t 5t" "BVLIST" D NT NX "SEEDS" K N NTHERM [NCONC NTHREADS NICE]
+scripts/flow_all.sh   OUTDIR [eps] [tmax] [nconc]      # Wilson-flow every saved config
+scripts/w0_table.py   OUTDIR [ref]                     # w0/a, sqrt(t0)/a, <plaq> per (trunc, bv)
+```
+`run_ladder.sh` pulls the correct remapped β-vector per truncation via
+`couplings_for_ctm.py`, launches one `nice`'d `dym-mod-metro-savecfg` per point, and
+writes `OUTDIR/<trunc>/b<bv>/seed<seed>/{nersc-*, run.log, flow.dat}`.
+`scripts/string_tension.py` fits √σ from the Wilson-loop grid; along a coupling
+trajectory the dimensionless ratio √σ·w₀ should stay constant where the discrete
+theory mimics continuum SU(3) (watch for the freezing line pre-empting the window).
 
 > On a tiny lattice (e.g. 4⁴) `w0_scale` will report "scale determination failed" —
 > there is no scale window; use a thermalized ensemble on a larger lattice.

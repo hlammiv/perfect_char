@@ -50,10 +50,12 @@ beta_ctm = [0.0] * C
 for s in range(C):
     beta_ctm[pi[s]] = beta_ct[s]
 
+betastr = " ".join("%.10g" % b for b in beta_ctm)
+if os.environ.get("BETAS_ONLY"):      # machine-readable: just the S1080ctm beta-vector
+    print(betastr); sys.exit(0)
 print(f"# perfect-action truncation couplings_{trunc}, bv={bv}")
 print(f"# beta (S1080ct row order):  {['%.5g'%b for b in beta_ct]}")
 print(f"# beta (S1080ctm row order): {['%.5g'%b for b in beta_ctm]}")
-betastr = " ".join("%.10g" % b for b in beta_ctm)
 print()
 print("# multi-character run (no config save):")
 print(f"./dym-mod-metro ./groups/S1080ctm {D} {Nt} {Nx} {betastr} {seed}")

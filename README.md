@@ -227,6 +227,27 @@ multi-character MC ──► save SU(3) configs (NERSC) ──► Wilson flow �
 > On a tiny lattice (e.g. 4⁴) `w0_scale` will report "scale determination failed" —
 > there is no scale window; use a thermalized ensemble on a larger lattice.
 
+### Perfect-action couplings on `S1080ctm`
+
+`couplings_*.py` emit the character-expansion (perfect-action) β-vector in
+`S1080ct`'s irrep-row order, which differs from `S1080ctm`'s. To apply them to the
+flow-enabled file:
+
+```
+python3 generators/couplings_for_ctm.py  TRUNC bv D Nt Nx [seed]    # TRUNC = 1t..5t
+```
+
+prints the β-vector **remapped to `S1080ctm`** and ready `dym-mod-metro` /
+`dym-mod-metro-savecfg` commands. The permutation π is computed once and verified
+to machine precision by `generators/map_s1080ct_to_ctm.py`
+(→ `s1080ct_to_ctm.json`): it is the group isomorphism between the two element
+labelings, **anchored on the defining representation** so each coupling lands on
+the correct irrep — e.g. the 6-dim couplings go to `S1080ctm` rows 8,9, *not* its
+rows 4,5 (which are 3-dims). Verified that the remapped couplings reproduce the
+identical action (`|S_ct − S_ctm∘σ| ≈ 2·10⁻¹³`). The truncation ladder turns on
+successively more characters in perfect-action order: `1t` = the defining 3⊕3̄
+(≈ discrete Wilson) through `5t` = all 17 irreps.
+
 ---
 
 ## Building

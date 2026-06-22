@@ -33,6 +33,17 @@ def w0_from(t, t2E, ref=REF_W0):
     return np.nan
 
 
+RATIO_T0_W0SQ = 0.9596     # pure SU(3) t0/w0^2 (FlowQCD 1503.06516): converts t/t0 <-> t/w0^2
+
+def t0_from(t, t2E, ref=REF_W0):
+    """t0 = flow time where t^2<E>=ref (a VALUE crossing -- far more stable than the
+    w0 derivative crossing, especially near finite-volume saturation)."""
+    for i in range(len(t2E) - 1):
+        if (t2E[i] - ref) * (t2E[i+1] - ref) < 0:
+            return t[i] + (ref - t2E[i]) / (t2E[i+1] - t2E[i]) * (t[i+1] - t[i])
+    return np.nan
+
+
 def cost_aniso(t, t2E1, t2E2, w0, window=(0.2, 1.5)):
     if not np.isfinite(w0) or w0 <= 0:
         return np.inf

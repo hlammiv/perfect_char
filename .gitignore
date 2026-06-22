@@ -1,6 +1,9 @@
 # build artifacts
 *.o
 dym-mod-metro
+dym-mod-metro-savecfg
+tools/wilsonflow/wilson_flow
+tools/wilsonflow/w0_scale
 a.out
 gmon.out
 *.gcda
@@ -21,3 +24,9 @@ proc_*
 proct_*
 oproc_*
 !data_s1080/out_bf8.407_ba-1.65_nt32_nx32_s.log
+
+# Wilson-flow run output
+nersc-*
+lat-beta*
+flow.*
+allflow.dat

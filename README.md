@@ -57,6 +57,7 @@ perfect_char/
 ├── README.md, LITERATURE_REVIEW.md
 ├── Makefile
 ├── dym-mod-metro.cpp        # main: multi-character Metropolis Monte Carlo
+├── dym-mod-metro-savecfg.cpp# same MC, also dumps SU(3) configs in NERSC format (for Wilson flow)
 ├── lattice.c / lattice.h    # geometry, plaquette, Wilson loop, Polyakov line
 ├── group.c   / group.h      # group-file loader (mult table + character table)
 ├── timer.cpp / timer.h      # lightweight timers
@@ -64,13 +65,17 @@ perfect_char/
 ├── now_that_we_dont_talk.sh # build + launch helper
 ├── groups/                  # gauge-group data (the "data needed to run")
 │   ├── S1080ct              #   Σ(1080) ⊂ SU(3): 1080 elements, 17 irreps   ← main target
+│   ├── S1080ctm             #   Σ(1080) + appended defining-rep matrices (for NERSC dump/flow)
 │   ├── S108ct              #   order-108 subgroup: 108 elements, 14 irreps  ← fast for testing
 │   ├── char_tabs/          #   character tables + coupling result dumps (.nb derivations: ../chars)
 │   └── character-expansion/#   standalone character-expansion utility
 ├── generators/              # scripts that produce the data above
 │   ├── genS108ct.py        #   build a group file in the loader's format (template)
+│   ├── build_s1080_matrix_file.py  # build S1080ctm (char table + matrices) via Burnside–Dixon
 │   ├── couplings_*.py      #   emit run commands with perfect-action couplings β_c(β_bare)
 │   └── group_matrices/     #   per-subgroup matrix + multiplication-table generators
+├── tools/wilsonflow/        # standalone BMW gradient-flow + w0 scale tools (build.sh)
+├── scripts/                 # flow_w0.sh, w0_extract.py, string_tension.py, ...
 └── data_s1080/              # example output log + analysis scripts
 ```
 
@@ -178,10 +183,57 @@ tests and rebuild.
 
 ---
 
+## Wilson-flow scale setting (w₀, t₀)
+
+To set the lattice scale and to use **gradient-flow observables** as a clean,
+renormalized probe of improvement (the methodology of the classically-perfect
+gradient-flow program — Holland, Ipp, Müller & Wenger, arXiv:2504.15870), the
+discrete-group configurations are embedded back into SU(3) and flowed:
+
+```
+multi-character MC ──► save SU(3) configs (NERSC) ──► Wilson flow ──► w₀ / t₀
+   dym-mod-metro-savecfg          (each config)        tools/wilsonflow/    scripts/
+```
+
+1. **A group file with appended defining-rep matrices** is required so each link
+   index can be written as its SU(3) matrix. `groups/S1080ctm` is exactly this:
+   the Σ(1080) character table **and** the 1080 defining-rep 3×3 matrices in one
+   element ordering. It is built by
+   `python3 generators/build_s1080_matrix_file.py` (ordering + matrices taken from
+   the `dym_symanzik_action` repo's `mys1080-v4`; the full character table is
+   recomputed from the group's Cayley table by the **Burnside–Dixon** method, then
+   verified: SU(3)-ness, the homomorphism `M(a)M(b)=M(ab)`, character orthogonality,
+   and that row 1 = fundamental / row 3 = adjoint as in `S1080ct`).
+
+2. **Dump configs** (note the extra `outprefix [K] [N] [Ntherm]` args; needs D=4):
+   ```
+   ./dym-mod-metro-savecfg groups/S1080ctm 4 Nt Nx  β_0 … β_{C-1}  seed  out/  K N Ntherm
+   ```
+   writes `out/nersc-bf<β1>-ba<β3>-…-num####` in NERSC `4D_SU3_GAUGE_3X3` format.
+   `wilson_flow` re-validates the plaquette from the matrices on load, so a wrong
+   embedding is caught immediately.
+
+3. **Flow + extract** (`tools/wilsonflow/build.sh` builds `wilson_flow` + `w0_scale`,
+   the BMW standalone tools):
+   ```
+   tools/wilsonflow/wilson_flow -f nersc -e 0.01 -t 10.0  out/nersc-...   # -> flow.<cfg>
+   scripts/flow_w0.sh   SCANDIR [eps] [tmax] [ncores]     # flow all configs, collect
+   scripts/w0_extract.py                                  # jackknife t₀, w₀ (ref 0.3)
+   ```
+   `scripts/string_tension.py` fits √σ from the Wilson-loop grid; along a coupling
+   trajectory the dimensionless ratio √σ·w₀ should stay constant where the discrete
+   theory mimics continuum SU(3) (watch for the freezing line pre-empting the window).
+
+> On a tiny lattice (e.g. 4⁴) `w0_scale` will report "scale determination failed" —
+> there is no scale window; use a thermalized ensemble on a larger lattice.
+
+---
+
 ## Building
 
 ```bash
-make            # -> dym-mod-metro   (g++ -O3 -fopenmp -std=c++11)
+make            # -> dym-mod-metro  and  dym-mod-metro-savecfg  (g++ -O3 -fopenmp)
+( cd tools/wilsonflow && ./build.sh )   # -> wilson_flow, w0_scale
 make clean
 ```
 

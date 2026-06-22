@@ -5,9 +5,11 @@ LDLIBS = -lm
 CXXFLAGS = -O3 -g -pg -fopenmp -std=c++11
 CFLAGS = -O3 -std=gnu99 -Wall -fopenmp 
 #CFLAGS = -O3 -std=gnu99 -Wall -fsanitize=address
-all: dym-mod-metro
+all: dym-mod-metro dym-mod-metro-savecfg
 
 dym-mod-metro: dym-mod-metro.cpp lattice.o group.o timer.o
 
+dym-mod-metro-savecfg: dym-mod-metro-savecfg.cpp lattice.o group.o timer.o
+
 clean:
-	${RM} dym-mod-metro lattice.o group.o timer.o gmon.out
+	${RM} dym-mod-metro dym-mod-metro-savecfg lattice.o group.o timer.o gmon.out

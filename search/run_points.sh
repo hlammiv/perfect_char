@@ -4,7 +4,7 @@
 # points concurrently, THREADS OpenMP threads each. Run from the repo root.
 #
 # usage: search/run_points.sh OUTDIR POINTSFILE D NT NX N K NTHERM NCONC THREADS [eps tmax]
-#   POINTSFILE: one point per line:  "<label>  b0 b1 ... b16"   (label + 17 betas)
+#   POINTSFILE: one point per line:  "<label>  <seed>  b0 b1 ... b16"  (label + seed + 17 betas)
 #   (chars: 1,2 = 3+3bar fundamental; 3 = adjoint(8); 8 = the 6; etc.)
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
@@ -14,11 +14,12 @@ mkdir -p "$OUT"
 [ -x ./dym-mod-metro-savecfg ] || { echo "build first: make"; exit 1; }
 
 one() {
-  local label=$1; shift; local betas="$*"
+  local label=$1; local seed=$2; shift 2; local betas="$*"
   local d="$OUT/$label"; mkdir -p "$d"
   env OMP_NUM_THREADS="$THR" ./dym-mod-metro-savecfg ./groups/S1080ctm "$D" "$NT" "$NX" \
-      $betas 7 "$d/" "$K" "$N" "$NTH" > "$d/gen.log" 2>&1
+      $betas "$seed" "$d/" "$K" "$N" "$NTH" > "$d/gen.log" 2>&1
   bash search/flow_configs.sh "$d" "$EPS" "$TMAX" "$THR" > "$d/flow.log" 2>&1
+  rm -f "$d"/nersc-*           # configs not needed after flowing (keep flow_*.dat + pchar.dat)
   python3 - "$d" "$label" <<'PY' > "$d/result.txt" 2>/dev/null
 import sys; sys.path.insert(0,'search'); import numpy as np
 from reweight import load_pchar, load_flows, align_flows

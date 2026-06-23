@@ -1,0 +1,45 @@
+#!/bin/bash
+# Parallel coupling-point runner (for many-core boxes like lenore). For each point:
+# generate an ensemble + Wilson-flow + measure w0/a, <plaq>, |Polyakov|. Runs NCONC
+# points concurrently, THREADS OpenMP threads each. Run from the repo root.
+#
+# usage: search/run_points.sh OUTDIR POINTSFILE D NT NX N K NTHERM NCONC THREADS [eps tmax]
+#   POINTSFILE: one point per line:  "<label>  b0 b1 ... b16"   (label + 17 betas)
+#   (chars: 1,2 = 3+3bar fundamental; 3 = adjoint(8); 8 = the 6; etc.)
+set -u
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
+[ $# -ge 10 ] || { sed -n '2,9p' "$0"; exit 1; }
+OUT=$1; PF=$2; D=$3; NT=$4; NX=$5; N=$6; K=$7; NTH=$8; NCONC=$9; THR=${10}; EPS=${11:-0.04}; TMAX=${12:-8.0}
+mkdir -p "$OUT"
+[ -x ./dym-mod-metro-savecfg ] || { echo "build first: make"; exit 1; }
+
+one() {
+  local label=$1; shift; local betas="$*"
+  local d="$OUT/$label"; mkdir -p "$d"
+  env OMP_NUM_THREADS="$THR" ./dym-mod-metro-savecfg ./groups/S1080ctm "$D" "$NT" "$NX" \
+      $betas 7 "$d/" "$K" "$N" "$NTH" > "$d/gen.log" 2>&1
+  bash search/flow_configs.sh "$d" "$EPS" "$TMAX" "$THR" > "$d/flow.log" 2>&1
+  python3 - "$d" "$label" <<'PY' > "$d/result.txt" 2>/dev/null
+import sys; sys.path.insert(0,'search'); import numpy as np
+from reweight import load_pchar, load_flows, align_flows
+from cost_flow import reweighted_t2E, t0_from, RATIO_T0_W0SQ
+d, lab = sys.argv[1], sys.argv[2]
+e = load_pchar(d+'/pchar.dat'); fl = load_flows(d)
+sp = e['obs']['simpleplaq']; po = abs(e['obs']['repoly'].mean()+1j*e['obs']['impoly'].mean())
+t,E1,E2,idx = align_flows(e['nums'], fl); te = 0.5*np.array(reweighted_t2E(t,E1,E2,np.ones(len(idx)))).sum(0)
+t0 = t0_from(t,te); w0 = (t0/RATIO_T0_W0SQ)**0.5 if np.isfinite(t0) else float('nan')
+ph = 'confined' if sp.mean()<2.3 and po<0.1 else 'FROZEN'
+print('%-26s plaq=%.3f poly=%.3f %-8s w0/a=%s' % (lab, sp.mean(), po, ph, ('%.3f'%w0) if np.isfinite(w0) else 'nan'))
+PY
+}
+export -f one; export OUT D NT NX N K NTH THR EPS TMAX
+running=0
+while read -r line; do
+  [ -z "$line" ] && continue
+  case "$line" in \#*) continue;; esac
+  bash -c "one $line" &
+  running=$((running+1))
+  [ "$running" -ge "$NCONC" ] && { wait -n; running=$((running-1)); }
+done < "$PF"
+wait
+echo "=== w0/a summary ($OUT, ${D}D ${NT}x${NX}, N=$N) ==="; cat "$OUT"/*/result.txt 2>/dev/null | sort

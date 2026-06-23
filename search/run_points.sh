@@ -23,12 +23,13 @@ one() {
   python3 - "$d" "$label" <<'PY' > "$d/result.txt" 2>/dev/null
 import sys; sys.path.insert(0,'search'); import numpy as np
 from reweight import load_pchar, load_flows, align_flows
-from cost_flow import reweighted_t2E, t0_from, RATIO_T0_W0SQ
+from cost_flow import reweighted_t2E, w0_from
 d, lab = sys.argv[1], sys.argv[2]
 e = load_pchar(d+'/pchar.dat'); fl = load_flows(d)
 sp = e['obs']['simpleplaq']; po = abs(e['obs']['repoly'].mean()+1j*e['obs']['impoly'].mean())
-t,E1,E2,idx = align_flows(e['nums'], fl); te = 0.5*np.array(reweighted_t2E(t,E1,E2,np.ones(len(idx)))).sum(0)
-t0 = t0_from(t,te); w0 = (t0/RATIO_T0_W0SQ)**0.5 if np.isfinite(t0) else float('nan')
+t,E1,E2,idx = align_flows(e['nums'], fl)
+te = np.array(reweighted_t2E(t,E1,E2,np.ones(len(idx)))).sum(0)   # E=Et+Es (no 0.5); BMW f=t^2(Es+Et)
+w0 = w0_from(t,te)   # direct derivative-based w0/a (matches tools/wilsonflow/w0_scale)
 ph = 'confined' if sp.mean()<2.3 and po<0.1 else 'FROZEN'
 print('%-26s plaq=%.3f poly=%.3f %-8s w0/a=%s' % (lab, sp.mean(), po, ph, ('%.3f'%w0) if np.isfinite(w0) else 'nan'))
 PY

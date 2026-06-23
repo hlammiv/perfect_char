@@ -8,10 +8,20 @@ usage: search/w0_jack.py ENS_DIR     (ENS_DIR contains flow_<num>.dat)
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
-from reweight import load_flows
+from reweight import load_flows, load_pchar
 from cost_flow import t0_from, RATIO_T0_W0SQ
 
 d = sys.argv[1]
+# Phase check FIRST: a frozen/ordered config flows to a spuriously large (artifact) w0/a.
+# Never report w0/a for a frozen ensemble as if it were physical.
+phase = "?"
+try:
+    e = load_pchar(d.rstrip('/') + '/pchar.dat')
+    sp = e['obs']['simpleplaq'].mean()
+    po = abs(e['obs']['repoly'].mean() + 1j * e['obs']['impoly'].mean())
+    phase = "confined" if (sp < 2.3 and po < 0.1) else "FROZEN"
+except Exception:
+    pass
 fl = load_flows(d)
 w0 = []
 for num, c in fl.items():
@@ -25,4 +35,5 @@ if n < 2:
     print(f"{lab:14s} w0/a: insufficient resolved configs ({n})")
 else:
     m = w0.mean(); err = w0.std(ddof=1) / np.sqrt(n)
-    print(f"{lab:14s} w0/a = {m:.3f} +- {err:.3f}   (N={n} cfgs, per-cfg spread {100*w0.std()/m:.0f}%)")
+    flag = "" if phase == "confined" else f"  [{phase} -> w0/a is a frozen-phase ARTIFACT, not physical]"
+    print(f"{lab:14s} [{phase}] w0/a = {m:.3f} +- {err:.3f}   (N={n} cfgs, per-cfg spread {100*w0.std()/m:.0f}%){flag}")
